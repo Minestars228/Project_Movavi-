@@ -4,13 +4,33 @@ import random
 
 pygame.init()
 
-print('Мой проект "Космический защитник"')
-print('>> Вражеские корабли летят сверху, игрок стреляет в них (одна кнопка – выстрел).\n>> За каждое попадание +5 очков.')
-
+sho = 0
 score = 0
 space = 0
 live = 3
 base_live = 3
+
+def start():
+    global run1
+    run1 = True
+    while run1:
+        screen.fill((0, 0, 0))
+        screen.blit(start1 , (10 , 60))
+        screen.blit(start2 , (10 , 120))
+        screen.blit(start3 , (10 , 180))
+        screen.blit(start4 , (10 , 240))
+        screen.blit(start5 , (10 , 300))
+        screen.blit(start6 , (10 , 360))
+        screen.blit(start7 , (10 , 420))
+        screen.blit(start8 , (10 , 480))
+        screen.blit(start9 , (175 , 600))
+        for event in pygame.event.get():    
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        run1 = False
+        pygame.display.update()
+        clock.tick(60)
+
 
 def move_player():
     speed = 15
@@ -21,7 +41,8 @@ def move_player():
         player.rect.x += speed
 
 def move_alien():
-    speed = 5
+    global live
+    speed = 4
     for m in aliens:
         m.rect.y += speed
         if m.rect.top > SCREEN_HEIGHT:
@@ -35,24 +56,33 @@ def check_collide_aliens():
     return None
 
 def shot():
+    global sho
     bullet = pygame.sprite.Sprite(bullets, all_sprite)
     bullet.image = bullet_image
     bullet.rect: pygame.Rect = bullet.image.get_rect()
-    bullet.rect.y = player.rect.y
-    bullet.rect.x = player.rect.x
+    if sho == 0:
+        bullet.rect.y = player.rect.y
+        bullet.rect.x = player.rect.x
+    elif sho == 1:
+        bullet.rect.y = player.rect.top
+        bullet.rect.x = player.rect.right - 20
+
 
 def move_bullet():
     speed = 20
     for b in bullets:
         b.rect.y -= speed
+        if b.rect.bottom < 0:
+            b.kill()
 
 
 def check_collide_shot():
-    global score
-    res = pygame.sprite.groupcollide(aliens, bullets,False,False, collided=pygame.sprite.collide_mask)
-    if res:
-        score += 5
-    return res
+    for m in aliens:
+        for b in bullets:
+            if pygame.sprite.collide_mask(m, b):
+                b.kill()
+                return m
+    return None
 
 SCREEN_SIZE = SCREEN_WIDTH, SCREEN_HEIGHT = 1500, 900
 screen = pygame.display.set_mode(SCREEN_SIZE)
@@ -64,7 +94,7 @@ bullets = pygame.sprite.Group()
 
 
 player = pygame.sprite.Sprite(all_sprite)
-player.image = pygame.image.load('./imgs/player_2.png')
+player.image = pygame.image.load(f'./imgs/player_{random.randint(2,3)}.png')
 player.rect: pygame.Rect = player.image.get_rect()
 
 player.rect.centerx = SCREEN_WIDTH // 2
@@ -87,8 +117,36 @@ GameOver = font_object_2.render(f"Game Over", False, 'white')
 font_object_3 = pygame.font.SysFont('Arial', 50)
 lives = font_object_3.render(f"Жизни: {live}", False, 'white')
 
+font_object_4 = pygame.font.SysFont('Arial', 50)
+start1 = font_object_4.render(f'Мой проект "Космический защитник"', False, 'white')
+
+font_object_5 = pygame.font.SysFont('Arial', 40)
+start2 = font_object_5.render(f'>> Вражеские корабли летят сверху, игрок стреляет в них (одна кнопка – выстрел)', False, 'white')
+
+font_object_6 = pygame.font.SysFont('Arial', 40)
+start3 = font_object_6.render(f'>> За каждое попадание +5 очков', False, 'white')
+
+font_object_7 = pygame.font.SysFont('Arial', 50)
+start4 = font_object_7.render(f'Как Играть:', False, 'white')
+
+font_object_8 = pygame.font.SysFont('Arial', 40)
+start5 = font_object_8.render(f'>> Выстрел "ЛКМ"', False, 'white')
+
+font_object_9 = pygame.font.SysFont('Arial', 40)
+start6 = font_object_9.render(f'>> Купить жизнь "E"(ПРИ НАЛИЧИИ 15 ОЧКОВ)', False, 'white')
+
+font_object_10 = pygame.font.SysFont('Arial', 40)
+start7 = font_object_10.render(f'>> Пауза "Space"(пробел)', False, 'white')
+
+font_object_11 = pygame.font.SysFont('Arial', 40)
+start8 = font_object_11.render(f'>> Если умер можно начать заново на "T"', False, 'white')
+
+font_object_12 = pygame.font.SysFont('Arial', 75)
+start9 = font_object_12.render(f'>>Что бы начать игру нажмите "ЛКМ"<<', False, 'white')
+
 run = True
 game_end = False
+start()
 while run:
 
     screen.fill((0, 0, 64))
@@ -104,13 +162,23 @@ while run:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 space += 1
-            if event.key == pygame.K_f:
+            if event.key == pygame.K_e:
                 if score >= 15:
                     live += 1
                     score -= 15
+            if event.key == pygame.K_t:
+                game_end = False
+                live = 3
+                score = 0  
+                pygame.display.update()  
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 shot()
+                if sho == 0:
+                    sho = 1
+                elif sho == 1:
+                    sho = 0
+
 
     move_bullet()
     if live <= 0:
@@ -126,6 +194,7 @@ while run:
             live -= 1
         if l:
             l.rect.centery = 5000
+            score += 5
     
         all_sprite.draw(screen)
     else:
